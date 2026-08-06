@@ -50,6 +50,16 @@ async def test_cart_add_twice_merges(cart: CartService) -> None:
     assert items[0].qty == 3
 
 
+async def test_cart_change_qty(cart: CartService) -> None:
+    await cart.add(UNIQ_ID, "КСВ-01")
+    items = await cart.change_qty(UNIQ_ID, "КСВ-01", 1)
+    assert items[0].qty == 2
+    items = await cart.change_qty(UNIQ_ID, "КСВ-01", -5)
+    assert items[0].qty == 1
+    items = await cart.change_qty(UNIQ_ID, "НЕТ-00", 1)
+    assert len(items) == 1
+
+
 async def test_cart_add_unknown_article(cart: CartService) -> None:
     assert "не найден" in await cart.add(UNIQ_ID, "ХХХ-99")
 

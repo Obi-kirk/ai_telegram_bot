@@ -1,7 +1,12 @@
-from aiogram import Router, types
+from aiogram import F, Router, types
 from aiogram.filters import Command
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 
-from src.database.models import User
+from src.database.models import CartItem, User
 from src.services.cart import CartService, OrderService
 from src.services.catalog import CatalogService
 
@@ -14,14 +19,34 @@ _HELP_TEXT = (
     "Доступные команды:\n"
     "- /start — приветствие\n"
     "- /catalog — каталог по категориям\n"
-    "- /cart — корзина\n"
+    "- /cart — корзина (кнопки для изменения)\n"
     "- /cart add <артикул> [кол-во] — добавить товар\n"
     "- /cart clear — очистить корзину\n"
-    "- /cart checkout — оформить заказ\n"
     "- /status — статус заказов\n"
     "- /help — помощь\n\n"
     "Задавайте вопросы в свободной форме — я найду ответ в базе знаний."
 )
+
+
+def _cart_keyboard(items: list[CartItem]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(text="−", callback_data=f"cart:dec:{item.article}"),
+            InlineKeyboardButton(
+                text=f"{item.title} x{item.qty}",
+                callback_data="cart:noop",
+            ),
+            InlineKeyboardButton(text="+", callback_data=f"cart:inc:{item.article}"),
+        ]
+        for item in items
+    ]
+    rows.append(
+        [InlineKeyboardButton(text="Оформить заказ", callback_data="cart:checkout")]
+    )
+    rows.append(
+        [InlineKeyboardButton(text="Очистить корзину", callback_data="cart:clear")]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 @router.message(Command("help"))
@@ -42,7 +67,10 @@ async def cart_handler(message: types.Message, user: User) -> None:
         await _cart_command(message, user.telegram_id, args[1:])
         return
     items = await cart.list_items(user.telegram_id)
-    await message.answer(cart.format(items))
+    if not items:
+        await message.answer(cart.format(items))
+        return
+    await message.answer(cart.format(items), reply_markup=_cart_keyboard(items))
 
 
 async def _cart_command(
@@ -68,3 +96,68 @@ async def _cart_command(
 async def status_handler(message: types.Message, user: User) -> None:
     user_orders = await orders.list_by_user(user.telegram_id)
     await message.answer(orders.format(user_orders))
+
+
+@router.callback_query(F.data.startswith("cart:"))
+async def cart_callback(callback: CallbackQuery, user: User) -> None:
+    parts = callback.data.split(":")
+    action = parts[1]
+    if callback.message is None:
+        await callback.answer("Сообщение устарело")
+        return
+
+    if action == "inc":
+        await cart.change_qty(user.telegram_id, parts[2], 1)
+        await callback.answer("+1")
+    elif action == "dec":
+        await cart.change_qty(user.telegram_id, parts[2], -1)
+        await callback.answer("-1")
+    elif action == "noop":
+        await callback.answer()
+        return
+    elif action == "clear":
+        await cart.clear(user.telegram_id)
+        await callback.answer("Корзина очищена")
+        await _render_cart(callback, user)
+        return
+    elif action == "checkout":
+        items = await cart.list_items(user.telegram_id)
+        if not items:
+            await callback.answer("Корзина пуста")
+            return
+        confirm = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="Подтвердить заказ", callback_data="cart:confirm"
+                    ),
+                    InlineKeyboardButton(text="Отмена", callback_data="cart:cancel"),
+                ]
+            ]
+        )
+        await callback.message.edit_text(
+            f"Оформить заказ на {cart.total(items):,} руб.?".replace(",", " "),
+            reply_markup=confirm,
+        )
+        await callback.answer()
+        return
+    elif action == "confirm":
+        result = await cart.checkout(user.telegram_id)
+        await callback.message.edit_text(result)
+        await callback.answer()
+        return
+    elif action == "cancel":
+        await callback.answer()
+        await _render_cart(callback, user)
+        return
+    await _render_cart(callback, user)
+
+
+async def _render_cart(callback: CallbackQuery, user: User) -> None:
+    items = await cart.list_items(user.telegram_id)
+    if not items:
+        await callback.message.edit_text(cart.format(items))
+    else:
+        await callback.message.edit_text(
+            cart.format(items), reply_markup=_cart_keyboard(items)
+        )

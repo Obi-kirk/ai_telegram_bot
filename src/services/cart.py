@@ -51,6 +51,20 @@ class CartService:
         async with session_factory() as session:
             return list((await session.execute(stmt)).scalars().all())
 
+    async def change_qty(
+        self, telegram_id: int, article: str, delta: int
+    ) -> list[CartItem]:
+        stmt = select(CartItem).where(
+            CartItem.telegram_id == telegram_id,
+            CartItem.article == article.upper(),
+        )
+        async with session_factory() as session:
+            item = (await session.execute(stmt)).scalar_one_or_none()
+            if item is not None:
+                item.qty = max(1, item.qty + delta)
+                await session.commit()
+        return await self.list_items(telegram_id)
+
     @staticmethod
     def total(items: list[CartItem]) -> int:
         return sum(item.price * item.qty for item in items)
