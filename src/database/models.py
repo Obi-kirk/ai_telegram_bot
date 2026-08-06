@@ -23,6 +23,14 @@ class Base(DeclarativeBase):
     pass
 
 
+class OrderStatus(str, Enum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    SHIPPED = "shipped"
+    DELIVERED = "delivered"
+    RECEIVED = "received"
+
+
 class Document(Base):
     __tablename__ = "documents"
 
@@ -44,3 +52,25 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    article: Mapped[str] = mapped_column(String(16))
+    title: Mapped[str] = mapped_column(String(128))
+    price: Mapped[int] = mapped_column(Integer)
+    qty: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    total: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), default=OrderStatus.PENDING.value)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

@@ -11,6 +11,7 @@ from src.handlers.access import UserMiddleware
 from src.handlers.admin import router as admin_router
 from src.handlers.employee import router as employee_router
 from src.handlers.message import router as message_router
+from src.handlers.shop import router as shop_router
 from src.handlers.start import router as start_router
 
 load_dotenv()
@@ -36,6 +37,7 @@ def create_dispatcher() -> Dispatcher:
     dp.include_router(start_router)
     dp.include_router(admin_router)
     dp.include_router(employee_router)
+    dp.include_router(shop_router)
     dp.include_router(message_router)
 
     @dp.errors()
