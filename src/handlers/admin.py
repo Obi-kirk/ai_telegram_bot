@@ -80,8 +80,13 @@ async def _set_blocked(message: types.Message, user: User, blocked: bool) -> Non
 @require_role(Role.ADMIN)
 async def admin_stats_handler(message: types.Message) -> None:
     stats = await users.count_by_role()
+    all_users = await users.list_all()
     total = sum(stats.values())
     lines = [f"Всего пользователей: {total}"]
     for role in (Role.USER, Role.EMPLOYEE, Role.ADMIN):
         lines.append(f"{role.value}: {stats.get(role.value, 0)}")
+    lines.append("\nСписок:")
+    for u in all_users:
+        name = f"@{u.username}" if u.username else "—"
+        lines.append(f"{u.telegram_id} | {name} | {u.role} | {u.status}")
     await message.answer("📊 Статистика:\n" + "\n".join(lines))

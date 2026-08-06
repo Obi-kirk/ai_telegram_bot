@@ -81,3 +81,8 @@ class UserService:
                 select(User.role, func.count()).group_by(User.role)
             )
             return dict(rows.all())
+
+    async def list_all(self) -> list[User]:
+        async with session_factory() as session:
+            rows = await session.execute(select(User).order_by(User.id))
+            return list(rows.scalars().all())
