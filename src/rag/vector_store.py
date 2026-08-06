@@ -32,8 +32,8 @@ def chunk_text(
     ]
 
 
-async def save_chunk(text: str) -> None:
-    doc = Document(text=text, embedding=get_embedding(text))
+async def save_chunk(text: str, source: str = "data") -> None:
+    doc = Document(text=text, source=source, embedding=get_embedding(text))
     async with session_factory() as session:
         session.add(doc)
         await session.commit()
@@ -65,6 +65,6 @@ async def index_documents(folder_path: str) -> int:
         path = os.path.join(folder_path, filename)
         text = await asyncio.to_thread(_read_file, path)
         for chunk in chunk_text(text):
-            await save_chunk(chunk)
+            await save_chunk(chunk, source=filename)
             count += 1
     return count

@@ -108,14 +108,13 @@ AGENTS.md — единственный источник правил. Не ду�
 
 Сделано:
 - Бот на polling запускается (`python -m src.main`), отвечает на /start и любые сообщения (LLM через OpenRouter DeepSeek, fallback Groq).
-- RAG: 4 чанка из data/ проиндексированы в БД (модель all-MiniLM-L6-v2, размерность 384, поиск топ-3 косинусной близостью). Роутер RAG-ответов к боту НЕ подключён — следующий шаг.
+- RAG подключён к боту: RAGAnswerService (src/services/rag_answers.py) — поиск топ-3 косинусной близостью → контекст → LLM → ответ со списком источников; если релевантных чанков нет — обычный ответ LLM. Модель all-MiniLM-L6-v2 (384), 4 чанка из data/, у чанков есть поле source (имя файла).
 - Система ролей: UserMiddleware + require_role, команды /setrole, /block, /unblock, /admin_stats (сейчас показывает список пользователей с ID), /employee_report. Бутстрап: ADMIN_IDS в .env.
-- Тесты: 18 шт (tests/) — роли, валидация, sanitize; используют реальную БД ai_bot, чистят свои данные, TESTING=1 включает NullPool.
+- Тесты: 21 шт (tests/) — роли, валидация, sanitize, RAGAnswerService; используют реальную БД ai_bot, чистят свои данные, TESTING=1 включает NullPool.
 - Инфраструктура: PostgreSQL 18 + pgvector 0.8.6, БД ai_bot, роль ai_bot (пароль только в .env). venv в .venv. Ремоут GitHub: Obi-kirk/ai_telegram_bot (ветка main). Коммиты от имени Obi-kirk.
 - Идентификатор для admin_stats: telegram_id. Узнать свой ID — @userinfobot.
 
 Отложено/планы:
-- Подключить RAG к message-хендлеру (поиск → контекст → LLM → источники).
 - Команды /catalog, /cart, /status, /help (упомянуты в data/guide.txt).
 - Вебхук с проверкой X-Telegram-Bot-Api-Secret-Token (сейчас polling).
 - Не логировать PII; .env никогда не коммитить (в .gitignore).

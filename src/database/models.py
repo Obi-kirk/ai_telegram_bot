@@ -28,6 +28,7 @@ class Document(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     text: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(128), default="data")
     embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIM))
 
 
