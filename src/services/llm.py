@@ -1,28 +1,19 @@
 import logging
 import os
-import re
 
 import httpx
 from dotenv import load_dotenv
+
+from src.utils.sanitize import sanitize_prompt
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-_SUSPICIOUS = re.compile(
-    r"(ignore (all |any )?previous|system:|developer:|you are now|jailbreak)",
-    re.IGNORECASE,
-)
-
 ALLOWED_PROVIDER_URLS = {
     "https://openrouter.ai/api/v1/chat/completions",
     "https://api.groq.com/openai/v1/chat/completions",
 }
-
-
-def sanitize_prompt(prompt: str) -> str:
-    """Санитизация промпта от инъекций (правило AGENTS.md)."""
-    return _SUSPICIOUS.sub("", prompt).strip()
 
 
 class LLMService:

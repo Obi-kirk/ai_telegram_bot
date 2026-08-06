@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from src.database.models import Base
 
@@ -11,7 +12,11 @@ database_url = os.getenv("DATABASE_URL")
 if not database_url:
     raise RuntimeError("DATABASE_URL не задан в .env")
 
-engine = create_async_engine(database_url, echo=False)
+engine = create_async_engine(
+    database_url,
+    echo=False,
+    poolclass=NullPool if os.getenv("TESTING") == "1" else None,
+)
 session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
 
