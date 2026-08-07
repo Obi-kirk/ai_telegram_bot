@@ -60,6 +60,12 @@ async def test_cart_change_qty(cart: CartService) -> None:
     assert len(items) == 1
 
 
+async def test_cart_remove(cart: CartService) -> None:
+    await cart.add(UNIQ_ID, "КСВ-01")
+    await cart.remove(UNIQ_ID, "КСВ-01")
+    assert cart.format(await cart.list_items(UNIQ_ID)) == "Корзина пуста."
+
+
 async def test_cart_add_unknown_article(cart: CartService) -> None:
     assert "не найден" in await cart.add(UNIQ_ID, "ХХХ-99")
 

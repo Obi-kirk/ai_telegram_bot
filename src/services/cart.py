@@ -65,6 +65,15 @@ class CartService:
                 await session.commit()
         return await self.list_items(telegram_id)
 
+    async def remove(self, telegram_id: int, article: str) -> None:
+        stmt = delete(CartItem).where(
+            CartItem.telegram_id == telegram_id,
+            CartItem.article == article.upper(),
+        )
+        async with session_factory() as session:
+            await session.execute(stmt)
+            await session.commit()
+
     @staticmethod
     def total(items: list[CartItem]) -> int:
         return sum(item.price * item.qty for item in items)

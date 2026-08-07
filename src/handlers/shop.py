@@ -151,13 +151,21 @@ async def cart_callback(callback: CallbackQuery, user: User) -> None:
 
     if action == "add":
         result = await cart.add(user.telegram_id, parts[2])
-        await callback.answer(result, show_alert=False)
+        await callback.answer()
+        await callback.message.answer(result)
+        return
     elif action == "inc":
         await cart.change_qty(user.telegram_id, parts[2], 1)
         await callback.answer("+1")
     elif action == "dec":
-        await cart.change_qty(user.telegram_id, parts[2], -1)
-        await callback.answer("-1")
+        items = await cart.list_items(user.telegram_id)
+        target = next((item for item in items if item.article == parts[2]), None)
+        if target is not None and target.qty <= 1:
+            await cart.remove(user.telegram_id, parts[2])
+            await callback.answer("Товар удалён")
+        else:
+            await cart.change_qty(user.telegram_id, parts[2], -1)
+            await callback.answer("-1")
     elif action == "noop":
         await callback.answer()
         return
