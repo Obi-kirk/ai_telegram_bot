@@ -131,6 +131,28 @@ class OrderService:
         async with session_factory() as session:
             return list((await session.execute(stmt)).scalars().all())
 
+    async def list_all(self) -> list[Order]:
+        stmt = select(Order).order_by(Order.id.desc())
+        async with session_factory() as session:
+            return list((await session.execute(stmt)).scalars().all())
+
+    async def get(self, order_id: int) -> Order | None:
+        stmt = select(Order).where(Order.id == order_id)
+        async with session_factory() as session:
+            return (await session.execute(stmt)).scalar_one_or_none()
+
+    async def set_status(self, order_id: int, status: str) -> Order | None:
+        order = await self.get(order_id)
+        if order is None:
+            return None
+        async with session_factory() as session:
+            order = (
+                await session.execute(select(Order).where(Order.id == order_id))
+            ).scalar_one()
+            order.status = status
+            await session.commit()
+        return order
+
     def format(self, orders: list[Order]) -> str:
         if not orders:
             return "У вас пока нет заказов."

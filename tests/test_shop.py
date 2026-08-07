@@ -89,3 +89,29 @@ async def test_checkout_empty_cart(cart: CartService) -> None:
 async def test_status_empty() -> None:
     orders = await OrderService().list_by_user(77002)
     assert OrderService().format(orders) == "У вас пока нет заказов."
+
+
+async def test_order_set_status_and_list_all(cart: CartService) -> None:
+    service = OrderService()
+    await cart.add(UNIQ_ID, "КСВ-01")
+    result = await cart.checkout(UNIQ_ID)
+    order_id = int(result.split("#")[1].split(" ")[0])
+
+    changed = await service.set_status(order_id, "shipped")
+    assert changed is not None
+    assert changed.status == "shipped"
+
+    assert await service.set_status(999_999, "shipped") is None
+
+    all_orders = await service.list_all()
+    assert any(o.id == order_id for o in all_orders)
+
+
+async def test_status_labels_changes(cart: CartService) -> None:
+    service = OrderService()
+    await cart.add(UNIQ_ID, "КСВ-01")
+    result = await cart.checkout(UNIQ_ID)
+    order_id = int(result.split("#")[1].split(" ")[0])
+    await service.set_status(order_id, "delivered")
+    orders = await service.list_by_user(UNIQ_ID)
+    assert "Доставка" in service.format(orders)

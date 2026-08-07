@@ -1,7 +1,9 @@
 from aiogram import Router, types
 from aiogram.enums import ChatAction
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from src.database.models import User
+from src.services.catalog import Product
 from src.services.history import dialog_memory
 from src.services.matcher import ProductMatcher
 from src.services.rag_answers import RAGAnswerService
@@ -11,6 +13,19 @@ rag = RAGAnswerService()
 matcher = ProductMatcher()
 
 
+def _cart_buttons(products: list[Product]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"+ В корзину: {product.title}",
+                callback_data=f"cart:add:{product.article}",
+            )
+        ]
+        for product in products
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
 @router.message()
 async def ai_handler(message: types.Message, user: User) -> None:
     if not message.text:
@@ -18,15 +33,22 @@ async def ai_handler(message: types.Message, user: User) -> None:
     await message.bot.send_chat_action(message.chat.id, action=ChatAction.TYPING)
 
     if matcher.is_product_query(message.text):
+        matches = matcher.match(message.text)
         answer = (
             matcher.format(message.text)
             or "Не нашёл подходящих моделей. Уточните запрос или откройте /catalog."
         )
-        await message.answer(answer)
+        products = [match.product for match in matches]
+        await message.answer(
+            answer, reply_markup=_cart_buttons(products) if products else None
+        )
         return
 
     history = dialog_memory.get(user.telegram_id)
     dialog_memory.add(user.telegram_id, "user", message.text)
     answer = await rag.generate(message.text, history)
     dialog_memory.add(user.telegram_id, "assistant", answer)
-    await message.answer(answer)
+    products = matcher.find_references(message.text)
+    await message.answer(
+        answer, reply_markup=_cart_buttons(products) if products else None
+    )

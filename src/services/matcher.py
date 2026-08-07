@@ -187,3 +187,20 @@ class ProductMatcher:
         ]
         lines.append("Подробнее: /catalog или нажмите кнопку под категорией.")
         return header + "\n" + "\n".join(lines)
+
+    def find_references(self, text: str) -> list[Product]:
+        """Находит товары, упомянутые в тексте: по артикулу или названию."""
+        upper = text.upper()
+        found: list[Product] = []
+        match = re.search(r"\b(?:КСВ|АКС)-\d{2}\b", upper)
+        if match:
+            product = self.catalog.find(match.group(0))
+            if product is not None:
+                found.append(product)
+        lowered = text.lower()
+        for product in self.catalog.products:
+            if product.title.lower() in lowered and product not in found:
+                found.append(product)
+                if len(found) >= 3:
+                    break
+        return found

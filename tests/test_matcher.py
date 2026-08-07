@@ -45,3 +45,17 @@ def test_format_mentions_budget() -> None:
     text = matcher.format("купить нож до 9 000 руб.")
     assert text is not None
     assert "бюджет до 9 000" in text
+
+
+def test_find_references_by_article() -> None:
+    refs = matcher.find_references("сколько стоит КСВ-01?")
+    assert [r.article for r in refs] == ["КСВ-01"]
+
+
+def test_find_references_by_title() -> None:
+    refs = matcher.find_references("расскажи про нож Тайга")
+    assert any(r.title == "Тайга" for r in refs)
+
+
+def test_find_references_empty() -> None:
+    assert matcher.find_references("привет") == []
