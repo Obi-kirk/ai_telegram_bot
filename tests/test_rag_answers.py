@@ -31,3 +31,18 @@ async def test_generate_without_docs_plain_llm() -> None:
         result = await service.generate("вопрос")
 
     assert result == "Не знаю."
+
+
+async def test_generate_with_history_adds_history_to_prompt() -> None:
+    llm = AsyncMock(spec=["generate"])
+    llm.generate = AsyncMock(return_value="Да, остальные с микартой.")
+    service = RAGAnswerService(llm=llm)
+    history = [("user", "Какая рукоять у Тайги?"), ("assistant", "Берёзовая капа.")]
+
+    with patch("src.services.rag_answers.search", new=AsyncMock(return_value=[])):
+        result = await service.generate("а у других?", history)
+
+    assert result == "Да, остальные с микартой."
+    prompt = llm.generate.await_args.args[0]
+    assert "Пользователь: Какая рукоять у Тайги?" in prompt
+    assert "Консультант: Берёзовая капа." in prompt

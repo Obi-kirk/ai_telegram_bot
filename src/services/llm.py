@@ -23,7 +23,7 @@ class LLMService:
         self,
         max_tokens: int = 500,
         temperature: float = 0.7,
-        cache_limit: int = 100,
+        cache_limit: int = 200,
     ) -> None:
         self.providers: dict[str, dict[str, str | None]] = {
             "openrouter": {

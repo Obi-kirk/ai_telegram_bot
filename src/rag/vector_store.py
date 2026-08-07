@@ -1,5 +1,6 @@
 import asyncio
 import os
+from collections import OrderedDict
 
 from sentence_transformers import SentenceTransformer
 from sqlalchemy import select
@@ -11,12 +12,24 @@ CHUNK_SIZE = 400
 CHUNK_OVERLAP = 50
 TOP_K = 5
 RELEVANCE_THRESHOLD = 0.8
+_EMBED_CACHE_LIMIT = 512
+_QUERY_CACHE_LIMIT = 256
 
 _model = SentenceTransformer("all-MiniLM-L6-v2")
+_embed_cache: OrderedDict[str, list[float]] = OrderedDict()
+_query_cache: OrderedDict[tuple[str, int], list[Document]] = OrderedDict()
 
 
 def get_embedding(text: str) -> list[float]:
-    return _model.encode(text).tolist()
+    cached = _embed_cache.get(text)
+    if cached is not None:
+        _embed_cache.move_to_end(text)
+        return cached
+    vector = _model.encode(text).tolist()
+    _embed_cache[text] = vector
+    if len(_embed_cache) > _EMBED_CACHE_LIMIT:
+        _embed_cache.popitem(last=False)
+    return vector
 
 
 def chunk_text(
@@ -42,6 +55,12 @@ async def save_chunk(text: str, source: str = "data") -> None:
 
 async def search(query: str, top_k: int = TOP_K) -> list[Document]:
     """Возвращает релевантные чанки (косинусное расстояние ниже порога)."""
+    key = (query, top_k)
+    cached = _query_cache.get(key)
+    if cached is not None:
+        _query_cache.move_to_end(key)
+        return cached
+
     q_emb = get_embedding(query)
     distance = Document.embedding.cosine_distance(q_emb)
     stmt = (
@@ -52,7 +71,12 @@ async def search(query: str, top_k: int = TOP_K) -> list[Document]:
     )
     async with session_factory() as session:
         result = await session.execute(stmt)
-        return list(result.scalars().all())
+        docs = list(result.scalars().all())
+
+    _query_cache[key] = docs
+    if len(_query_cache) > _QUERY_CACHE_LIMIT:
+        _query_cache.popitem(last=False)
+    return docs
 
 
 def _read_file(path: str) -> str:
