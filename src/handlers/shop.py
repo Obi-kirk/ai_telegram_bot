@@ -4,16 +4,27 @@ from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
 )
 
 from src.database.models import CartItem, User
 from src.services.cart import CartService, OrderService
-from src.services.catalog import CatalogService
+from src.services.catalog import CatalogService, Product
 
 router = Router()
 catalog = CatalogService()
 cart = CartService()
 orders = OrderService()
+
+MAIN_MENU = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Каталог")],
+        [KeyboardButton(text="Корзина"), KeyboardButton(text="Заказы")],
+        [KeyboardButton(text="Помощь")],
+    ],
+    resize_keyboard=True,
+)
 
 _HELP_TEXT = (
     "Доступные команды:\n"
@@ -51,13 +62,45 @@ def _cart_keyboard(items: list[CartItem]) -> InlineKeyboardMarkup:
 
 @router.message(Command("help"))
 async def help_handler(message: types.Message) -> None:
-    await message.answer(_HELP_TEXT)
+    await message.answer(_HELP_TEXT, reply_markup=MAIN_MENU)
 
 
 @router.message(Command("catalog"))
 async def catalog_handler(message: types.Message) -> None:
     for category, products in catalog.by_category():
-        await message.answer(catalog.format_category(category, products))
+        await message.answer(
+            catalog.format_category(category, products),
+            reply_markup=_category_keyboard(products),
+        )
+
+
+def _category_keyboard(products: list[Product]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"+ {p.title} ({p.article}) — "
+                f"{p.price:,} руб.".replace(",", " "),
+                callback_data=f"cart:add:{p.article}",
+            )
+        ]
+        for p in products
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+_MENU_TEXTS = {"Каталог", "Корзина", "Заказы", "Помощь"}
+
+
+@router.message(F.text.in_(_MENU_TEXTS))
+async def menu_handler(message: types.Message, user: User) -> None:
+    if message.text == "Каталог":
+        await catalog_handler(message)
+    elif message.text == "Корзина":
+        await cart_handler(message, user)
+    elif message.text == "Заказы":
+        await status_handler(message, user)
+    else:
+        await help_handler(message)
 
 
 @router.message(Command("cart"))
@@ -106,7 +149,10 @@ async def cart_callback(callback: CallbackQuery, user: User) -> None:
         await callback.answer("Сообщение устарело")
         return
 
-    if action == "inc":
+    if action == "add":
+        result = await cart.add(user.telegram_id, parts[2])
+        await callback.answer(result, show_alert=False)
+    elif action == "inc":
         await cart.change_qty(user.telegram_id, parts[2], 1)
         await callback.answer("+1")
     elif action == "dec":
