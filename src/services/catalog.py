@@ -14,6 +14,7 @@ class Product:
     title: str
     price: int
     category: str
+    description: str = ""
 
 
 class CatalogService:
@@ -38,6 +39,7 @@ class CatalogService:
                         title=buffer["title"],
                         price=buffer["price"],
                         category=category,
+                        description=" ".join(buffer.get("description", [])),
                     )
                 )
 
@@ -66,6 +68,8 @@ class CatalogService:
                 match = _PRICE_RE.search(line)
                 if match:
                     buffer["price"] = int(match.group(1).replace(" ", ""))
+                if "title" in buffer:
+                    buffer.setdefault("description", []).append(line)
         flush()
         self._products = products
         return products
