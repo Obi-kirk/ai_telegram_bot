@@ -10,7 +10,7 @@ from src.database.models import Document
 CHUNK_SIZE = 400
 CHUNK_OVERLAP = 50
 TOP_K = 5
-RELEVANCE_THRESHOLD = 0.7
+RELEVANCE_THRESHOLD = 0.8
 
 _model = SentenceTransformer("all-MiniLM-L6-v2")
 
