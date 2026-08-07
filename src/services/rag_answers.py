@@ -1,4 +1,3 @@
-from src.database.models import Document
 from src.rag.vector_store import search
 from src.services.llm import LLMService
 
@@ -12,7 +11,7 @@ _INSTRUCTION = (
 
 
 class RAGAnswerService:
-    """Строит ответ: векторный поиск → контекст → LLM → ответ с источниками."""
+    """Строит ответ: векторный поиск → контекст → LLM."""
 
     def __init__(self, llm: LLMService | None = None) -> None:
         self.llm = llm or LLMService()
@@ -24,11 +23,4 @@ class RAGAnswerService:
 
         context = "\n\n".join(doc.text for doc in docs)
         prompt = _INSTRUCTION.format(context=context, question=question)
-        answer = await self.llm.generate(prompt)
-        return f"{answer}\n\nИсточники: {self._sources(docs)}"
-
-    @staticmethod
-    def _sources(docs: list[Document]) -> str:
-        names = [doc.source for doc in docs if doc.source]
-        unique = list(dict.fromkeys(names))
-        return ", ".join(unique) if unique else "внутренняя база знаний"
+        return await self.llm.generate(prompt)
