@@ -108,7 +108,7 @@ AGENTS.md — единственный источник правил. Не ду�
 
 Сделано:
 - Бот на polling запускается (`python -m src.main`), отвечает на /start и любые сообщения (LLM через OpenRouter DeepSeek, fallback Groq).
-- RAG подключён к боту: RAGAnswerService (src/services/rag_answers.py) — поиск топ-3 косинусной близостью → контекст → LLM; если релевантных чанков нет — обычный ответ LLM. Модель all-MiniLM-L6-v2 (384), 4 чанка из data/, у чанков есть поле source (имя файла). Сноска с источниками в ответе отсутствует (убрана по запросу).
+- RAG подключён к боту: RAGAnswerService (src/services/rag_answers.py) — поиск топ-5 косинусной близостью с порогом релевантности (RELEVANCE_THRESHOLD=0.7, нерелевантное → обычный LLM) → контекст → LLM. Модель all-MiniLM-L6-v2 (384), 7 файлов из data/, чанк 400/50, у чанков есть поле source (имя файла). Сноска с источниками в ответе отсутствует (убрана по запросу).
 - Система ролей: UserMiddleware + require_role, команды /setrole, /block, /unblock, /admin_stats (сейчас показывает список пользователей с ID), /employee_report. Бутстрап: ADMIN_IDS в .env.
 - Магазин: /catalog (парсинг data/catalog.txt → 8 товаров по категориям, под каждым товаром инлайн-кнопка «+» для добавления в корзину, CatalogService), /cart (add <артикул> [кол-во], clear, checkout; инлайн-кнопки +/−, оформление с подтверждением — без адресов и оплаты, тестовый проект), /status (заказы, статусы pending→Сборка и т.д.), /help. Reply-кнопки главного меню (Каталог/Корзина/Заказы/Помощь) — на /start и /help. Таблицы cart_items, orders.
 - Тесты: 30 шт (tests/) — роли, валидация, sanitize, RAGAnswerService, каталог/корзина/заказы; используют реальную БД ai_bot, чистят свои данные, TESTING=1 включает NullPool.

@@ -7,9 +7,10 @@ from sqlalchemy import select
 from src.database.db import session_factory
 from src.database.models import Document
 
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 100
-TOP_K = 3
+CHUNK_SIZE = 400
+CHUNK_OVERLAP = 50
+TOP_K = 5
+RELEVANCE_THRESHOLD = 0.7
 
 _model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -40,10 +41,13 @@ async def save_chunk(text: str, source: str = "data") -> None:
 
 
 async def search(query: str, top_k: int = TOP_K) -> list[Document]:
+    """Возвращает релевантные чанки (косинусное расстояние ниже порога)."""
     q_emb = get_embedding(query)
+    distance = Document.embedding.cosine_distance(q_emb)
     stmt = (
         select(Document)
-        .order_by(Document.embedding.cosine_distance(q_emb))
+        .where(distance < RELEVANCE_THRESHOLD)
+        .order_by(distance)
         .limit(top_k)
     )
     async with session_factory() as session:

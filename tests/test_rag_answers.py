@@ -19,7 +19,7 @@ async def test_generate_with_docs_uses_context() -> None:
 
     assert result == "Возврат — 14 дней."
     assert "Источник" not in result
-    assert llm.generate.await_args.args[0].startswith("Ты — ассистент")
+    assert llm.generate.await_args.args[0].startswith("Ты — консультант магазина")
 
 
 async def test_generate_without_docs_plain_llm() -> None:
