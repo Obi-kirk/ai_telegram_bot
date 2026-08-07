@@ -126,3 +126,28 @@ class TestPrivacy:
         assert "тестовый бот" in text
         assert "не передаются третьим лицам" in text
         assert "не несёт ответственности" in text
+
+
+class TestAbout:
+    async def test_about_shown_to_any_user(self, bot_dp) -> None:
+        bot, dp, session = bot_dp
+        await users.get_or_create(900100001)
+        await _run(bot, dp, 900100001, "/about")
+        text = sent_texts(session)[0]
+        assert "Кузница Северного Ветра" in text
+        assert "ручной работы" in text
+
+
+class TestSetCommands:
+    async def test_user_commands_scope(self, bot_dp) -> None:
+        from src.utils.commands import USER_COMMANDS
+
+        names = {c.command for c in USER_COMMANDS}
+        assert "start" in names and "about" in names and "privacy" in names
+        assert "setrole" not in names
+
+    async def test_admin_includes_admin_commands(self, bot_dp) -> None:
+        from src.utils.commands import ADMIN_COMMANDS
+
+        names = {c.command for c in ADMIN_COMMANDS}
+        assert {"setrole", "block", "unblock", "admin_stats"}.issubset(names)

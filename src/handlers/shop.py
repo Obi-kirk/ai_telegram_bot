@@ -29,6 +29,7 @@ MAIN_MENU = ReplyKeyboardMarkup(
 _HELP_TEXT = (
     "Доступные команды:\n"
     "- /start — приветствие\n"
+    "- /about — о магазине\n"
     "- /catalog — каталог по категориям\n"
     "- /cart — корзина (кнопки для изменения)\n"
     "- /cart add <артикул> [кол-во] — добавить товар\n"
@@ -80,6 +81,22 @@ def _cart_keyboard(items: list[CartItem]) -> InlineKeyboardMarkup:
 @router.message(Command("help"))
 async def help_handler(message: types.Message) -> None:
     await message.answer(_HELP_TEXT, reply_markup=MAIN_MENU)
+
+
+_ABOUT_TEXT = (
+    "«Кузница Северного Ветра» — мастерская ножей ручной работы.\n\n"
+    "Мы изготавливаем охотничьи, туристические и кухонные ножи из проверенных "
+    "сталей (95X18, D2, AUS-8, VG-10) с деревянными и текстолитовыми рукоятями, "
+    "кожаными ножнами. Возможна гравировка на клинке и изготовление на заказ "
+    "(от 3 до 6 недель).\n\n"
+    "Доставка по России.\n"
+    "Сотрудники — с 10:00 до 19:00 по МСК."
+)
+
+
+@router.message(Command("about"))
+async def about_handler(message: types.Message) -> None:
+    await message.answer(_ABOUT_TEXT)
 
 
 @router.message(Command("privacy"))

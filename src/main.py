@@ -13,6 +13,7 @@ from src.handlers.employee import router as employee_router
 from src.handlers.message import router as message_router
 from src.handlers.shop import router as shop_router
 from src.handlers.start import router as start_router
+from src.utils.commands import set_bot_commands
 
 load_dotenv()
 
@@ -50,6 +51,7 @@ def create_dispatcher() -> Dispatcher:
 async def main() -> None:
     await init_db()
     bot = Bot(token=_get_token())
+    await set_bot_commands(bot)
     dp = create_dispatcher()
     logger.info("Бот запущен, начинаю polling")
     await dp.start_polling(bot)
