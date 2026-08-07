@@ -115,3 +115,14 @@ class TestSetRole:
         await users.set_role(900100005, Role.ADMIN)
         await _run(bot, dp, 900100005, "/setrole 900100006 boss")
         assert "Роль должна быть" in sent_texts(session)[0]
+
+
+class TestPrivacy:
+    async def test_privacy_shown_to_any_user(self, bot_dp) -> None:
+        bot, dp, session = bot_dp
+        await users.get_or_create(900100001)
+        await _run(bot, dp, 900100001, "/privacy")
+        text = sent_texts(session)[0]
+        assert "тестовый бот" in text
+        assert "не передаются третьим лицам" in text
+        assert "не несёт ответственности" in text

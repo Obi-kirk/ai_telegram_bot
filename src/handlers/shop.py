@@ -34,8 +34,25 @@ _HELP_TEXT = (
     "- /cart add <артикул> [кол-во] — добавить товар\n"
     "- /cart clear — очистить корзину\n"
     "- /status — статус заказов\n"
+    "- /privacy — политика конфиденциальности\n"
     "- /help — помощь\n\n"
     "Задавайте вопросы в свободной форме — я найду ответ в базе знаний."
+)
+
+_PRIVACY_TEXT = (
+    "Политика конфиденциальности\n\n"
+    "Это тестовый бот (демо-проект). Магазин «Кузница Северного Ветра» и все его "
+    "товары — вымышленные, заказы не обрабатываются.\n\n"
+    "Что хранится:\n"
+    "• Telegram ID и имя пользователя — для работы корзины, заказов и ролей;\n"
+    "• история диалога — в памяти процесса, для контекста ответов.\n\n"
+    "Что НЕ делается:\n"
+    "• данные не передаются третьим лицам;\n"
+    "• оплата, платёжные данные и адреса не запрашиваются и не хранятся;\n"
+    "• никто не получает и не рассылает ваши контакты.\n\n"
+    "Данные удаляются по запросу (напишите админу бота). "
+    "Как тестовый проект, бот не несёт ответственности за корректность ответов "
+    "LLM и содержимое каталога."
 )
 
 
@@ -63,6 +80,11 @@ def _cart_keyboard(items: list[CartItem]) -> InlineKeyboardMarkup:
 @router.message(Command("help"))
 async def help_handler(message: types.Message) -> None:
     await message.answer(_HELP_TEXT, reply_markup=MAIN_MENU)
+
+
+@router.message(Command("privacy"))
+async def privacy_handler(message: types.Message) -> None:
+    await message.answer(_PRIVACY_TEXT)
 
 
 @router.message(Command("catalog"))
