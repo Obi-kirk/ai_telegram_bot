@@ -48,7 +48,7 @@ async def ai_handler(message: types.Message, user: User) -> None:
     dialog_memory.add(user.telegram_id, "user", message.text)
     answer = await rag.generate(message.text, history)
     dialog_memory.add(user.telegram_id, "assistant", answer)
-    products = matcher.find_references(message.text)
+    products = matcher.find_references(answer) or matcher.find_references(message.text)
     await message.answer(
         answer, reply_markup=_cart_buttons(products) if products else None
     )
